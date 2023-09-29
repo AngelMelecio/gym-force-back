@@ -60,7 +60,7 @@ class UserViewSet(viewsets.GenericViewSet):
 
     def retrieve(self, request, pk=None):
         user = self.get_object(pk)
-        user_serializer = self.serializer_class(user)
+        user_serializer = self.list_serializer_class(user)
         return Response(user_serializer.data)
     
     @action(detail=False, methods=['delete'])
