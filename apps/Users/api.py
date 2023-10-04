@@ -16,13 +16,13 @@ class UserViewSet(viewsets.GenericViewSet):
     serializer_class = UserSerializer
     list_serializer_class = CustomUserSerializer
     queryset = None
+
     def get_object(self, pk):
         return get_object_or_404(self.model, pk=pk)
 
     def get_queryset(self):
         if self.queryset is None:
-            self.queryset = self.model.objects\
-                            .values('id', 'usuario', 'correo', 'apellidos', 'nombre', 'is_active', 'is_staff','rol')
+            self.queryset = self.model.objects.all()
         return self.queryset
 
     @action(detail=True, methods=['post'])
