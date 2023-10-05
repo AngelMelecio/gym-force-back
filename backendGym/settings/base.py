@@ -15,7 +15,17 @@ SECRET_KEY = 'django-insecure-b0mf6z4ufl0opwz+395yoy=w2h_1tndi%1ok5kexb*m1gmok4+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# CORS and access to the API
 ALLOWED_HOSTS = []
+CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ORIGIN_WHITELIST = [
+    'http://localhost:3000',
+    'http://localhost:3030',
+    'http://localhost:81',
+]
+ 
+
 
 # Application definition
 BASE_APPS = [
@@ -27,10 +37,10 @@ BASE_APPS = [
     'django.contrib.staticfiles',
 ]
 THIRD_APPS = [
+    'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',  
     'rest_framework_simplejwt.token_blacklist',
-    'corsheaders',
 ]
 LOCAL_APPS = [
     'apps.Users',
@@ -83,7 +93,7 @@ SIMPLE_JWT = {
     "JTI_CLAIM": "jti",
 
     "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
-    "SLIDING_TOKEN_LIFETIME": timedelta(minutes=5),
+    "SLIDING_TOKEN_LIFETIME": timedelta(minutes=15),
     "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
 
     "TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
@@ -105,7 +115,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
 
 AUTH_USER_MODEL = 'Users.User'
 
