@@ -23,4 +23,4 @@ urlpatterns = [
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('users/',include('apps.Users.routers')),
-]
+]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
