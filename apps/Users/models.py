@@ -18,10 +18,10 @@ class UserManager(BaseUserManager):
         user.save(using=self.db)
         return user
 
-    def create_user(self,nombre,apellidos,fotografia, correo, usuario ,rol, password=None, **extra_fields):
-        return self._create_user(nombre,apellidos,fotografia, correo, usuario, rol, password, False, False, **extra_fields)
+    def create_user(self, nombre, apellidos, fotografia, correo, usuario ,rol, password=None,  **extra_fields):
+        return self._create_user(nombre, apellidos, fotografia, correo, usuario, rol, password, False, False, **extra_fields)
 
-    def create_superuser(self,nombre,apellidos, fotografia, correo, usuario, password=None, **extra_fields):
+    def create_superuser(self, nombre, apellidos, correo, usuario, password=None,fotografia=None, **extra_fields):
         return self._create_user(nombre, apellidos, fotografia, correo, usuario, password, True, True,'Administrador', **extra_fields)
 
     
