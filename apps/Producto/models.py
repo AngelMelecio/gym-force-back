@@ -10,4 +10,4 @@ class Producto(models.Model):
     inventario = models.IntegerField()
 
     def __str__(self):
-        return "{}".format(self.nombre+" - $"+self.precio+" / "+self.inventario+" unidades")
+        return "{}".format(self.nombre+" - $"+str(self.precio)+" / "+str(self.inventario)+" unidades")
