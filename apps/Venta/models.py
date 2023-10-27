@@ -11,4 +11,4 @@ class Venta(models.Model):
     total = models.DecimalField(max_digits=10, decimal_places=2)
     
     def __str__ (self):
-        return "{}".format(self.fecha+" - "+self.total+" - "+self.idCliente.nombre+" - "+self.idUser.nombre)
+        return "{}".format(str(self.fecha)+" - "+str(self.total)+" - "+self.idCliente.nombre+" - "+self.idUser.nombre)
