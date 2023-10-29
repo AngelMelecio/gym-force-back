@@ -50,7 +50,7 @@ def suscripcion_detail_api_view(request, pk=None ):
         elif request.method == 'DELETE':
             suscripcion = Suscripcion.objects.filter( idSuscripcion = pk ).first()
             try:
-                Suscripcion.delete()
+                suscripcion.delete()
                 return Response(
                     {'message':'Suscripcion eliminada correctamente!'}, 
                     status=status.HTTP_200_OK

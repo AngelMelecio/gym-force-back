@@ -50,7 +50,7 @@ def producto_detail_api_view(request, pk=None ):
         elif request.method == 'DELETE':
             producto = Producto.objects.filter( idProducto = pk ).first()
             try:
-                Producto.delete()
+                producto.delete()
                 return Response(
                     {'message':'Producto eliminado correctamente!'}, 
                     status=status.HTTP_200_OK
