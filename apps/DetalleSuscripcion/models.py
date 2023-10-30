@@ -13,4 +13,4 @@ class DetalleSuscripcion(models.Model):
     estado = models.CharField(max_length=200, null=False, blank=False)
 
     def __str__(self):
-        return "DetalleSuscripcion: %s %s %s %s %s %s %s" % (self.idSuscripcion, self.idVenta, self.fechaInicio, self.fechaFin, self.precioVenta, self.descuento, self.estado)
+        return "DetalleSuscripcion: %s %s %s %s %s %s %s" % (self.idSuscripcion, self.idVenta, self.fechaInicio, self.fechaFin, float(self.precioVenta), float(self.descuento), self.estado)

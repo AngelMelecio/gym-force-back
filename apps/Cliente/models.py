@@ -18,6 +18,11 @@ class Cliente(models.Model):
     def __str__(self):
         return "{}".format(self.nombre+" "+self.apellidos)
     
+    def get_full_name(self):
+        if self:
+            return f"{self.nombre} {self.apellidos}"
+        return "---"
+
     def save(self, *args, **kwargs):
         if not self.pk and not self.pin: 
             last_pin = Cliente.objects.all().order_by('-pin').first()
