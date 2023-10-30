@@ -5,10 +5,17 @@ from apps.Users.models import User
 
 class Venta(models.Model):
     idVenta = models.AutoField(auto_created=True, primary_key=True)
-    idCliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    idCliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, blank=True, null=True)
     idUser = models.ForeignKey(User, on_delete=models.CASCADE)
     fecha = models.DateField(auto_now_add=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)
     
     def __str__ (self):
-        return "{}".format(str(self.fecha)+" - "+str(self.total)+" - "+self.idCliente.nombre+" - "+self.idUser.nombre)
+        nombre_cliente = ""
+        if self.idCliente: 
+            nombre_cliente = self.idCliente.get_full_name()
+        return "{}".format(
+            str(self.fecha) + " - " + 
+            str(self.total) + " - " + 
+            nombre_cliente + " - " + 
+            self.idUser.nombre )

@@ -52,3 +52,6 @@ class User(AbstractBaseUser,PermissionsMixin):
 
     def __str__(self):
         return f'{self.usuario}'
+
+    def get_full_name(self):
+        return f"{self.nombre} {self.apellidos}"

@@ -5,6 +5,11 @@ from apps.Users.models import User
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     pass
 
+class SimpleUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id','nombre','apellidos')
+
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
