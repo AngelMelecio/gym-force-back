@@ -20,7 +20,9 @@ def cliente_api_view(request):
         cliente_serializer = ClienteSerializer(data=request.data)
         if cliente_serializer.is_valid():
             cliente_serializer.save()
-            return Response( {'message':'¡Cliente creado correctamente!','pin':cliente_serializer.data['pin']}, status=status.HTTP_201_CREATED )
+            return Response( {'message':'¡Cliente creado correctamente!',
+                              'idCliente':cliente_serializer.data['idCliente']
+                              }, status=status.HTTP_201_CREATED )
         return Response( cliente_serializer.errors, status=status.HTTP_400_BAD_REQUEST )
 
 @api_view(['GET','PUT','DELETE'])
