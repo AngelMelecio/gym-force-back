@@ -27,3 +27,6 @@ class Suscripcion(models.Model):
 
     def __str__(self):
         return "{}".format(self.tipo +" "+ self.modalidad+ " - " + str(self.duracion) + " días / $" + str(self.precio) ) 
+    
+    def get_nombre(self):
+        return "{}".format(self.tipo +" "+ self.modalidad)

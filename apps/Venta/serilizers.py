@@ -13,11 +13,11 @@ class DetallesVentaSerializer(serializers.ModelSerializer):
         fields = ['nombreProducto', 'precioVenta','cantidad']
 
 class DetallesSuscripcionSerializer(serializers.ModelSerializer):
-    nombreSuscripcion = serializers.ReadOnlyField(source='idSuscripcion.nombre')
+    nombreSuscripcion = serializers.ReadOnlyField(source='idSuscripcion.get_nombre')
     precio = serializers.ReadOnlyField(source='idSuscripcion.precio')
     class Meta:
         model = DetalleSuscripcion
-        fields = ['nombreSuscripcion','fechaFin']
+        fields = ['nombreSuscripcion','precio','fechaFin']
 
 
 class VentaSerializerWithDetails(serializers.ModelSerializer):
