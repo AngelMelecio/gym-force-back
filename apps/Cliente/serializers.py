@@ -10,3 +10,4 @@ class ClienteSerializerPostRegistro(serializers.ModelSerializer):
     class Meta:
         model = Cliente
         fields = ['nombre','apellidos','idCliente']
+
