@@ -15,72 +15,95 @@ from apps.Cliente.models import Cliente
 from apps.Users.models import User
 from django.db import transaction
 from datetime import datetime, timedelta
+from rest_framework.exceptions import ValidationError
+
 
 @api_view(['GET','POST'])
 @parser_classes([MultiPartParser , JSONParser])
 def venta_api_view(request):
     if request.method == 'POST':
         
-        # Substract data from the request
         productos = request.data.get('productos', [])
         suscripcion = request.data.get('suscripcion', None)
         id_clnt = request.data.get('cliente', None)
         id_usr = request.data.get('usuario', None)
 
         if not productos and suscripcion is None:
-            return Response({"message":"Error de solicitud"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Error de solicitud"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Get total cost 
         total_cost = 0
-        if len(productos) > 0:
-            for p in productos:
-                idP = p['idProducto']
-                quantity = p['cantidad']
-                prd = Producto.objects.filter(idProducto=idP).first()
-                total_cost += float(prd.precio) * float(quantity)
-                # Formation the products list
-                p['precioVenta'] = prd.precio
-                p['idProducto'] = prd
-
 
         if suscripcion:
             sus = Suscripcion.objects.filter(idSuscripcion=suscripcion['idSuscripcion']).first()
+            if not sus:
+                raise ValidationError("Suscripción no encontrada.")
             total_cost += float(sus.precio)
-       
 
-        with transaction.atomic():
-            cliente = Cliente.objects.filter(idCliente=id_clnt).first()
-            usuario = User.objects.filter(id=id_usr).first()
-            venta = Venta.objects.create(total=total_cost, idUser=usuario, idCliente=cliente)
-            detalles_venta = [ 
-                DetalleVenta(
-                    idVenta = venta,
-                    idProducto =  p['idProducto'],
-                    cantidad = p['cantidad'] ,
-                    precioVenta = p['precioVenta'],
-                    descuento=0
-                ) 
-                for p in productos
-            ]
-            DetalleVenta.objects.bulk_create(detalles_venta)
+        cliente = Cliente.objects.filter(idCliente=id_clnt).first()
+        if not cliente:
+            raise ValidationError("Cliente no encontrado.")
 
-            if suscripcion:
-                DetalleSuscripcion.objects.create(
-                    idSuscripcion = sus,
-                    idVenta = venta,
-                    fechaInicio = datetime.today().date(), 
-                    fechaFin = datetime.today().date() + timedelta(days=sus.duracion),
-                    precioVenta = sus.precio,   
-                    descuento = 0,
-                    estado = "activo"
-                )
+        usuario = User.objects.filter(id=id_usr).first()
+        if not usuario:
+            raise ValidationError("Usuario no encontrado.")
+
+        try:
+            with transaction.atomic():
+                venta = Venta.objects.create(total=total_cost, idUser=usuario, idCliente=cliente)
+                
+                 # Existencia e inventario de productos
+                product_instances = []
+                for p in productos:
+                    # select_for_update() toma el valor que tiene el registro en la base de datos
+                    # y no el que tiene en la memoria, esto para evitar que dos procesos
+                    # tomen el mismo valor y se genere un error de concurrencia
+                    prd = Producto.objects.select_for_update().filter(idProducto=p['idProducto']).first()
+                    
+                    if not prd:
+                        raise ValidationError(f"Producto con id {p['idProducto']} no encontrado.")
+                    
+                    # Validar que haya suficiente inventario
+                    if prd.inventario < p['cantidad']:
+                        raise ValidationError(f"No hay suficiente stock para el producto {prd.nombre}.")
+
+                    total_cost += float(prd.precio) * float(p['cantidad'])
+                    p['precioVenta'] = prd.precio
+                    p['idProducto'] = prd
+                    product_instances.append(prd)
+
+                detalles_venta = [ 
+                    DetalleVenta(
+                        idVenta = venta,
+                        idProducto =  p['idProducto'],
+                        cantidad = p['cantidad'],
+                        precioVenta = p['precioVenta'],
+                        descuento=0
+                    ) 
+                    for p in productos
+                ]
+                DetalleVenta.objects.bulk_create(detalles_venta)
+
+                # Actualizar inventario
+                for prd, p in zip(product_instances, productos):
+                    prd.inventario -= p['cantidad']
+                    prd.save()
+
+                if suscripcion:
+                    DetalleSuscripcion.objects.create(
+                        idSuscripcion = sus,
+                        idVenta = venta,
+                        fechaInicio = datetime.today().date(), 
+                        fechaFin = datetime.today().date() + timedelta(days=sus.duracion),
+                        precioVenta = sus.precio,   
+                        descuento = 0,
+                        estado = "activo"
+                    )
             
-        vnt_srlzr = VentaSerializerWithDetails(venta)
-        
-        return Response(vnt_srlzr.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    if(request.method == 'GET'):
-        pass
+        vnt_srlzr = VentaSerializerWithDetails(venta)
+        return Response(vnt_srlzr.data, status=status.HTTP_201_CREATED)
 
 @api_view(['GET','PUT','DELETE'])
 @parser_classes([MultiPartParser, JSONParser])
