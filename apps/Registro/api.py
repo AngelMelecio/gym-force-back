@@ -71,7 +71,7 @@ def registro_detail_api_view(request, pk=None ):
         registro_serializer = RegistroSerializer(registros, many=True)
         return Response(registro_serializer.data, status=status.HTTP_200_OK)
     
-    if request.method == 'PUT':
+    if request.method == 'PUT': 
         pass
     if request.method == 'DELETE':
         pass
