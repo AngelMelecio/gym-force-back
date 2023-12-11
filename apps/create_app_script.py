@@ -30,3 +30,5 @@ if __name__ == "__main__":
         create_app(app_name)
     else:
         print("Proporciona el nombre de la aplicación como argumento.")
+
+# python create_app_script.py nombreDeLaApp
