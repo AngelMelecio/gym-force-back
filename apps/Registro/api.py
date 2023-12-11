@@ -5,6 +5,7 @@ from rest_framework.decorators import parser_classes
 from rest_framework.parsers import MultiPartParser, JSONParser
 from apps.Cliente.models import Cliente
 from apps.Cliente.serializers import ClienteSerializerPostRegistro
+from apps.Registro.models import Registro
 from apps.Registro.serializers import RegistroSerializer
 from apps.DetalleSuscripcion.models import DetalleSuscripcion
 from apps.DetalleSuscripcion.serializers import DetalleSuscripcionSerializerPostRegistro
@@ -66,8 +67,13 @@ def registro_api_view(request):
 @parser_classes([MultiPartParser, JSONParser])
 def registro_detail_api_view(request, pk=None ):
     if request.method == 'GET':
-        pass
-    if request.method == 'PUT':
+        registros = Registro.objects.filter(idCliente=pk)
+        registro_serializer = RegistroSerializer(registros, many=True)
+        return Response(registro_serializer.data, status=status.HTTP_200_OK)
+    
+    if request.method == 'PUT': 
         pass
     if request.method == 'DELETE':
         pass
+
+    
