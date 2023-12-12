@@ -16,31 +16,26 @@ def get_info_adicional_cliente(cliente):
     Obtiene la información adicional para un cliente en particular.
 
     Retorna:
-        dict: Un diccionario con la diferencia de días y el valor concatenado.
+        dict: Un diccionario con la diferencia de días y el valor suscripcion.
     """
     # Obtenemos la venta más reciente del cliente
-    venta = cliente.venta_set.last()
+    # Obtenemos el detalle de suscripción más reciente de la venta
+    detalle_suscripcion = DetalleSuscripcion.objects.filter(idVenta__idCliente=cliente.data.get('idCliente') ).last()
+    if detalle_suscripcion:
 
-    if venta:
-        # Obtenemos el detalle de suscripción más reciente de la venta
-        detalle_suscripcion = venta.detallesuscripcion_set.last()
+        diferencia_dias = (detalle_suscripcion.fechaFin - datetime.now().date()).days
 
-        if detalle_suscripcion:
-            diferencia_dias = (detalle_suscripcion.fechaFin-datetime.now().date())
-
-            # Aquí usamos el objeto Suscripcion relacionado al detalle para construir el concatenado
-            suscripcion = detalle_suscripcion.idSuscripcion
-            concatenado = f"{suscripcion.tipo} {suscripcion.modalidad}"
-        else:
-            diferencia_dias = 0
-            concatenado = ""
+        # Aquí usamos el objeto Suscripcion relacionado al detalle para construir el suscripcion
+        suscripcion = detalle_suscripcion.idSuscripcion
+        suscripcion = f"{suscripcion.tipo} {suscripcion.modalidad}"
+       
     else:
-        diferencia_dias = 0
-        concatenado = ""
+        diferencia_dias = None
+        suscripcion = ""
 
     return {
         "diferencia_dias": diferencia_dias,
-        "concatenado": concatenado
+        "suscripcion": suscripcion
     }
 
 
@@ -53,13 +48,14 @@ def cliente_api_view(request):
         response_data = []
 
         for cliente in clientes:
-            info_adicional = get_info_adicional_cliente(cliente)
+            cliente_serializer = ClienteSerializer(cliente)
+
+            info_adicional = get_info_adicional_cliente(cliente_serializer)
 
             # Serializamos los datos del cliente
-            cliente_serializer = ClienteSerializer(cliente)
             cliente_data = cliente_serializer.data
             cliente_data["diferencia_dias"] = info_adicional["diferencia_dias"]
-            cliente_data["concatenado"] = info_adicional["concatenado"]
+            cliente_data["suscripcion"] = info_adicional["suscripcion"]
 
             response_data.append(cliente_data)
 
@@ -86,7 +82,29 @@ def cliente_detail_api_view(request, pk=None):
         # Retrieve
         if request.method == 'GET':
             cliente_serializer = ClienteSerializer(cliente)
-            return Response(cliente_serializer.data, status=status.HTTP_200_OK)
+            info_dias = get_info_adicional_cliente(cliente_serializer)
+            
+            historico_suscripciones = []
+           
+            detalles_suscripcion = DetalleSuscripcion.objects.filter(idVenta__idCliente=cliente_serializer.data['idCliente'])
+            for detalle in detalles_suscripcion:
+                suscripcion_data = {
+                    "id_suscripcion": detalle.idSuscripcion.idSuscripcion,
+                    "id_detalle_suscripcion": detalle.id,
+                    "nombre_suscripcion": f"{detalle.idSuscripcion.tipo} {detalle.idSuscripcion.modalidad}",
+                    "fecha_inicio": detalle.fechaInicio,
+                    "fecha_fin": detalle.fechaFin
+                }
+                historico_suscripciones.append(suscripcion_data)
+
+            historico_suscripciones.sort(key=lambda x: x['fecha_fin'], reverse=True)
+
+            response_data = cliente_serializer.data
+            response_data["diferencia_dias"] = info_dias["diferencia_dias"]
+            response_data["suscripcion"] = info_dias["suscripcion"]
+            response_data["historico_suscripciones"] = historico_suscripciones
+
+            return Response(response_data, status=status.HTTP_200_OK)
 
         # Update
         elif request.method == 'PUT':
