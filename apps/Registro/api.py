@@ -27,9 +27,9 @@ def registro_api_view(request):
             id_cliente = cl_srlzr.data.get('idCliente')
 
             # Obtener detalles de la suscripcion del cliente
-            query = DetalleSuscripcion.objects.filter( idVenta__idCliente=id_cliente ).first()
+            query = DetalleSuscripcion.objects.filter(idVenta__idCliente=id_cliente).last()
             dll_sus_srlzr = DetalleSuscripcionSerializerPostRegistro( query )
-
+           
             # Compara fecha de fin con fecha actual
             fecha_fin = datetime.strptime(dll_sus_srlzr.data.get('fechaFin'), '%Y-%m-%d').date()
             today = datetime.today().date()
