@@ -17,16 +17,13 @@ DEBUG = True
 
 # CORS and access to the API
 ALLOWED_HOSTS = []
-CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ORIGIN_WHITELIST = [
     'http://localhost:3000',
     'http://localhost:3030',
     'http://localhost:81',
-]
+] 
  
-
-
 # Application definition
 BASE_APPS = [
     'django.contrib.admin',
