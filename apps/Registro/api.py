@@ -6,10 +6,12 @@ from rest_framework.parsers import MultiPartParser, JSONParser
 from apps.Cliente.models import Cliente
 from apps.Cliente.serializers import ClienteSerializerPostRegistro
 from apps.Registro.models import Registro
-from apps.Registro.serializers import RegistroSerializer
+from apps.Registro.serializers import RegistroSerializer, RegistroSerializerToReport
 from apps.DetalleSuscripcion.models import DetalleSuscripcion
 from apps.DetalleSuscripcion.serializers import DetalleSuscripcionSerializerPostRegistro
 from datetime import datetime
+from django.utils.timezone import make_aware
+from datetime import timedelta
 
 @api_view(['GET','POST'])
 @parser_classes([MultiPartParser , JSONParser])
@@ -75,5 +77,25 @@ def registro_detail_api_view(request, pk=None ):
         pass
     if request.method == 'DELETE':
         pass
+
+@api_view(['GET'])
+def registros_api_view(request, fecha_inicio, fecha_fin):
+
+      
+    # Conversión de las cadenas de fecha a objetos datetime
+    format_str = '%Y-%m-%d'  # El formato en que se espera la fecha
+    inicio = make_aware(datetime.strptime(fecha_inicio, format_str))
+    fin = make_aware(datetime.strptime(fecha_fin, format_str))
+
+    # Ajustar fin para incluir todo el día
+    fin += timedelta(days=1) - timedelta(seconds=1)
+
+    if inicio and fin:
+        registros = Registro.objects.filter(fecha__range=(inicio, fin))
+    else:
+        registros = Registro.objects.all()
+    registros_serializer = RegistroSerializerToReport(registros, many=True)
+    return Response(registros_serializer.data, status=status.HTTP_200_OK)
+         
 
     
