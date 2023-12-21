@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.decorators import parser_classes
 from rest_framework.parsers import MultiPartParser, JSONParser
-from apps.Venta.serilizers import VentaSerializer, VentaSerializerWithDetails
+from apps.Venta.serilizers import VentaSerializer, VentaSerializerWithDetails,VentaDetalleSerializerToReport
 from apps.Venta.models import Venta
 from apps.Producto.models import Producto
 from apps.Producto.serializers import ProductoSerializer
@@ -16,6 +16,7 @@ from apps.Users.models import User
 from django.db import transaction
 from datetime import datetime, timedelta
 from rest_framework.exceptions import ValidationError
+from django.utils.timezone import make_aware
 
 
 @api_view(['GET','POST'])
@@ -38,6 +39,12 @@ def venta_api_view(request):
             if not sus:
                 raise ValidationError("Suscripción no encontrada.")
             total_cost += float(sus.precio)
+        
+        for p in productos:
+            product=Producto.objects.filter(idProducto=p['idProducto']).first()
+            if not product:
+                raise ValidationError("Producto no encontrado.")
+            total_cost += float(product.precio) * float(p['cantidad'])
 
         cliente = Cliente.objects.filter(idCliente=id_clnt).first()
         if not cliente:
@@ -105,12 +112,22 @@ def venta_api_view(request):
         vnt_srlzr = VentaSerializerWithDetails(venta)
         return Response(vnt_srlzr.data, status=status.HTTP_201_CREATED)
 
-@api_view(['GET','PUT','DELETE'])
-@parser_classes([MultiPartParser, JSONParser])
-def venta_detail_api_view(request, pk=None ):
-    if request.method == 'GET':
-        pass
-    if request.method == 'PUT':
-        pass
-    if request.method == 'DELETE':
-        pass
+@api_view(['GET'])
+def reporte_ventas_api_view(request,fecha_inicio, fecha_fin):
+
+    # Conversión de las cadenas de fecha a objetos datetime
+    format_str = '%Y-%m-%d'  # El formato en que se espera la fecha
+    inicio = make_aware(datetime.strptime(fecha_inicio, format_str))
+    fin = make_aware(datetime.strptime(fecha_fin, format_str))
+
+    # Ajustar fin para incluir todo el día
+    fin += timedelta(days=1) - timedelta(seconds=1)
+
+
+    if inicio and fin:
+        ventas = Venta.objects.filter(fecha__range=(inicio, fin))
+    else:
+        ventas = Venta.objects.all()
+
+    ventas_serializer = VentaDetalleSerializerToReport(ventas, many=True)
+    return Response(ventas_serializer.data, status=status.HTTP_200_OK)
