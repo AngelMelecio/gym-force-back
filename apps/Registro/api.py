@@ -9,6 +9,7 @@ from apps.Registro.models import Registro
 from apps.Registro.serializers import RegistroSerializer, RegistroSerializerToReport
 from apps.DetalleSuscripcion.models import DetalleSuscripcion
 from apps.DetalleSuscripcion.serializers import DetalleSuscripcionSerializerPostRegistro
+from apps.Users.models import User
 from datetime import datetime
 from django.utils.timezone import make_aware
 from datetime import timedelta
@@ -26,31 +27,36 @@ def registro_api_view(request):
         # Datos del cliente del request
         cliente = Cliente.objects.filter(pin=req_pin).first()
         if cliente :
-            cl_srlzr = ClienteSerializerPostRegistro(cliente)
-            id_cliente = cl_srlzr.data.get('idCliente')
-
+            
             # Obtener detalles de la suscripcion del cliente
-            query = DetalleSuscripcion.objects.filter(idVenta__idCliente=id_cliente).last()
-            dll_sus_srlzr = DetalleSuscripcionSerializerPostRegistro( query )
+            detalle = DetalleSuscripcion.objects.filter(idVenta__idCliente=cliente.idCliente).last()
+            usuario = User.objects.filter(id=request.data.get('idUser')).first()
+
+            if( not detalle ):
+                return Response( {'message':'Cliente sin suscripción'}, status=status.HTTP_404_NOT_FOUND )
+            
+            dll_sus_srlzr = DetalleSuscripcionSerializerPostRegistro( detalle )
            
             # Compara fecha de fin con fecha actual
-            fecha_fin = datetime.strptime(dll_sus_srlzr.data.get('fechaFin'), '%Y-%m-%d').date()
+            fecha_fin = detalle.fechaFin
             today = datetime.today().date()
+
+            print(fecha_fin)
+            print(today)
 
             if fecha_fin >= today:    
                 # Crear el registro de entrada
-                rgt = {
-                    "estado": "TODO",
-                    "idCliente": id_cliente,
-                    "idUser": request.data.get('idUser')
-                }
-                rgt_srlzr = RegistroSerializer(data=rgt)
-                if rgt_srlzr.is_valid():
-                    rgt_srlzr.save()
-                    return Response( {
-                        'message':'Registro exitoso',
-                        'registro':dll_sus_srlzr.data    
-                    }, status=status.HTTP_200_OK )
+                registro = Registro(
+                    estado = "TODO",
+                    idCliente = cliente,
+                    idUser = usuario
+                )
+                registro.save()
+                
+                return Response( {
+                    'message':'Registro exitoso',
+                    'registro':dll_sus_srlzr.data    
+                }, status=status.HTTP_200_OK )
 
             else:
                 return Response( {
@@ -67,9 +73,10 @@ def registro_api_view(request):
 
 @api_view(['GET','PUT','DELETE'])
 @parser_classes([MultiPartParser, JSONParser])
-def registro_detail_api_view(request, pk=None ):
+def registro_detail_api_view(request, pk=None, sus=None ):
     if request.method == 'GET':
-        registros = Registro.objects.filter(idCliente=pk)
+        detalle = DetalleSuscripcion.objects.filter(id=sus).first()
+        registros = Registro.objects.filter(idCliente=pk).filter(fecha__range=[detalle.fechaInicio, detalle.fechaFin])
         registro_serializer = RegistroSerializer(registros, many=True)
         return Response(registro_serializer.data, status=status.HTTP_200_OK)
     
