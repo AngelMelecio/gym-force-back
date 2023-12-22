@@ -9,5 +9,5 @@ class ClienteSerializer(serializers.ModelSerializer):
 class ClienteSerializerPostRegistro(serializers.ModelSerializer):
     class Meta:
         model = Cliente
-        fields = ['nombre','apellidos','idCliente']
+        fields = ['nombre','apellidos','idCliente','fotografia']
 
