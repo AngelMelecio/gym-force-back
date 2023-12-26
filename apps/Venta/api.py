@@ -17,6 +17,8 @@ from django.db import transaction
 from datetime import datetime, timedelta
 from rest_framework.exceptions import ValidationError
 from django.utils.timezone import make_aware
+import pytz
+
 
 
 @api_view(['GET','POST'])
@@ -96,17 +98,19 @@ def venta_api_view(request):
                     prd.save()
 
                 if suscripcion:
+                    fecha_fin = datetime.now(pytz.timezone('America/Mexico_City')).date() + timedelta(days=sus.duracion)
+
                     DetalleSuscripcion.objects.create(
-                        idSuscripcion = sus,
-                        idVenta = venta,
-                        fechaInicio = datetime.today().date(), 
-                        fechaFin = datetime.today().date() + timedelta(days=sus.duracion),
-                        precioVenta = sus.precio,   
-                        descuento = 0,
-                        estado = "activo"
+                        idSuscripcion=sus,
+                        idVenta=venta,
+                        fechaInicio=datetime.now(pytz.timezone('America/Mexico_City')).date(),
+                        fechaFin=fecha_fin ,
+                        precioVenta=sus.precio,
+                        descuento=0,
                     )
             
         except Exception as e:
+            print(e)
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         vnt_srlzr = VentaSerializerWithDetails(venta)
@@ -122,7 +126,7 @@ def reporte_ventas_api_view(request,fecha_inicio, fecha_fin):
 
     # Ajustar fin para incluir todo el día
     fin += timedelta(days=1) - timedelta(seconds=1)
-
+    print(fin)
 
     if inicio and fin:
         ventas = Venta.objects.filter(fecha__range=(inicio, fin))

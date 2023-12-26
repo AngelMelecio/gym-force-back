@@ -12,4 +12,4 @@ class DetalleSuscripcionSerializerPostRegistro(serializers.ModelSerializer):
     idVenta = VentaSerializerPostRegistro()
     class Meta:
         model = DetalleSuscripcion
-        fields = ['idVenta','estado','fechaInicio','fechaFin']
+        fields = ['idVenta','fechaInicio','fechaFin']
