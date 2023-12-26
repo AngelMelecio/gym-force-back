@@ -9,21 +9,21 @@ from datetime import datetime, timedelta
 from apps.DetalleSuscripcion.models import DetalleSuscripcion
 from apps.Venta.models import Venta
 from apps.Suscripcion.models import Suscripcion
+import pytz
 
 
 def get_info_adicional_cliente(cliente):
-    """
-    Obtiene la información adicional para un cliente en particular.
-
-    Retorna:
-        dict: Un diccionario con la diferencia de días y el valor suscripcion.
-    """
     # Obtenemos la venta más reciente del cliente
     # Obtenemos el detalle de suscripción más reciente de la venta
     detalle_suscripcion = DetalleSuscripcion.objects.filter(idVenta__idCliente=cliente.data.get('idCliente') ).last()
     if detalle_suscripcion:
 
-        diferencia_dias = (detalle_suscripcion.fechaFin - datetime.now().date()).days
+        timezone = pytz.timezone("America/Mexico_City")
+        now_aware = timezone.localize(datetime.now())
+
+        # Calculate the remaining days
+        # Using timedelta(1) to count the current day if any part of the day is left
+        diferencia_dias = (detalle_suscripcion.fechaFin - now_aware + timedelta(1)).days - 1
 
         # Aquí usamos el objeto Suscripcion relacionado al detalle para construir el suscripcion
         suscripcion = detalle_suscripcion.idSuscripcion

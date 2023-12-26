@@ -13,6 +13,7 @@ from apps.Users.models import User
 from datetime import datetime
 from django.utils.timezone import make_aware
 from datetime import timedelta
+import pytz
 
 @api_view(['GET','POST'])
 @parser_classes([MultiPartParser , JSONParser])
@@ -24,48 +25,36 @@ def registro_api_view(request):
         if not req_pin or not req_pin.isdigit():
             return Response({"message": "PIN no valido"}, status=status.HTTP_400_BAD_REQUEST)
        
-        # Datos del cliente del request
+        # Current date in the appropriate timezone
+        today = datetime.now(pytz.timezone('America/Mexico_City')).date()
+
         cliente = Cliente.objects.filter(pin=req_pin).first()
-        if cliente :
-            
-            # Obtener detalles de la suscripcion del cliente
+        if cliente:
             detalle = DetalleSuscripcion.objects.filter(idVenta__idCliente=cliente.idCliente).last()
             usuario = User.objects.filter(id=request.data.get('idUser')).first()
 
-            if( not detalle ):
-                return Response( {'message':'Cliente sin suscripción'}, status=status.HTTP_404_NOT_FOUND )
-            
-            dll_sus_srlzr = DetalleSuscripcionSerializerPostRegistro( detalle )
-           
-            # Compara fecha de fin con fecha actual
+            if not detalle:
+                return Response({'message': 'Cliente sin suscripción'}, status=status.HTTP_404_NOT_FOUND)
+
+            dll_sus_srlzr = DetalleSuscripcionSerializerPostRegistro(detalle)
             fecha_fin = detalle.fechaFin
-            today = datetime.today().date()
 
-            print(fecha_fin)
-            print(today)
-
-            if fecha_fin >= today:    
-                # Crear el registro de entrada
-                registro = Registro(
-                    estado = "TODO",
-                    idCliente = cliente,
-                    idUser = usuario
-                )
-                registro.save()
-                
-                return Response( {
-                    'message':'Registro exitoso',
-                    'registro':dll_sus_srlzr.data    
-                }, status=status.HTTP_200_OK )
-
+            if fecha_fin.date() >= today:
+                # Create the record
+                registro = Registro(idCliente=cliente, idUser=usuario)
+                try:
+                    registro.save()
+                    return Response({
+                        'message': 'Registro exitoso',
+                        'registro': dll_sus_srlzr.data
+                    }, status=status.HTTP_200_OK)
+                except Exception as e:
+                    # Handle save error
+                    return Response({'message': f'Error al guardar el registro: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             else:
-                return Response( {
-                    'message':'Suscripción vencida',
-                    'registro':dll_sus_srlzr.data
-                    }, status=status.HTTP_409_CONFLICT )
+                return Response({'message': 'Suscripción vencida', 'registro': dll_sus_srlzr.data}, status=status.HTTP_409_CONFLICT)
         else:
-            return Response( {'message':'Cliente No encontrado'}, status=status.HTTP_404_NOT_FOUND )
-
+            return Response({'message': 'Cliente No encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
 
     if(request.method == 'GET'):
@@ -87,8 +76,7 @@ def registro_detail_api_view(request, pk=None, sus=None ):
 
 @api_view(['GET'])
 def registros_api_view(request, fecha_inicio, fecha_fin):
-
-      
+    
     # Conversión de las cadenas de fecha a objetos datetime
     format_str = '%Y-%m-%d'  # El formato en que se espera la fecha
     inicio = make_aware(datetime.strptime(fecha_inicio, format_str))
