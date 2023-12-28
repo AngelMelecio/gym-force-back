@@ -1,4 +1,5 @@
 from django.db import models
+from apps.AvailablePIN.models import AvailablePIN
 
 def upload_to(instance, filename):
    return 'images/{filename}'.format(filename=filename)
@@ -24,12 +25,12 @@ class Cliente(models.Model):
         return "---"
 
     def save(self, *args, **kwargs):
-        if not self.pk and not self.pin: 
-            last_pin = Cliente.objects.all().order_by('-pin').first()
-            if last_pin:
-                self.pin = last_pin.pin + 1
-            else:
-                self.pin = 100
+        if not self.pk and not self.pin:
+            available_pin = AvailablePIN.objects.filter(isAssigned=False).first()
+            if available_pin:
+                self.pin = available_pin.pin
+                available_pin.isAssigned = True
+                available_pin.save()
 
         super(Cliente, self).save(*args, **kwargs)
 

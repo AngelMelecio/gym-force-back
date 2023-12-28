@@ -22,13 +22,18 @@ def registro_api_view(request):
         
         # Verificar el PIN
         req_pin = request.data.get('pin')
-        if not req_pin or not req_pin.isdigit():
-            return Response({"message": "PIN no valido"}, status=status.HTTP_400_BAD_REQUEST)
-       
+        req_id = request.data.get('idCliente')
+
+        if req_id:
+            cliente = Cliente.objects.filter(idCliente=req_id).first()
+        elif req_pin and req_pin.isdigit():
+            cliente = Cliente.objects.filter(pin=req_pin).first()
+        else:
+            return Response({"message": "PIN no válido"}, status=status.HTTP_400_BAD_REQUEST)
+
         # Current date in the appropriate timezone
         today = datetime.now(pytz.timezone('America/Mexico_City')).date()
-
-        cliente = Cliente.objects.filter(pin=req_pin).first()
+        
         if cliente:
             detalle = DetalleSuscripcion.objects.filter(idVenta__idCliente=cliente.idCliente).last()
             usuario = User.objects.filter(id=request.data.get('idUser')).first()
