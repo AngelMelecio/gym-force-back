@@ -97,13 +97,35 @@ def venta_api_view(request):
                     prd.inventario -= p['cantidad']
                     prd.save()
 
+
                 if suscripcion:
-                    fecha_fin = datetime.now(pytz.timezone('America/Mexico_City')).date() + timedelta(days=sus.duracion)
+                    
+                    detalle_suscripcion = DetalleSuscripcion.objects.filter(idVenta__idCliente=id_clnt).last()
+                    #Tiene historial de suscripciones
+                    if detalle_suscripcion:
+                        diferencia_dias = (detalle_suscripcion.fechaFin - pytz.timezone("America/Mexico_City").localize(datetime.now()) + timedelta(1)).days - 1
+
+                        #Tiene suscripcion activa
+                        if diferencia_dias >=0:
+                            fecha_inicio = detalle_suscripcion.fechaFin 
+
+                        #No tiene suscripcion activa
+                        else:
+                            fecha_inicio = pytz.timezone("America/Mexico_City").localize(datetime.now())
+                        
+                        fecha_fin = fecha_inicio + timedelta(days=sus.duracion)
+                        
+                    #No tiene historial de suscripciones
+                    else :
+                        fecha_inicio = pytz.timezone("America/Mexico_City").localize(datetime.now())
+                        fecha_fin = pytz.timezone("America/Mexico_City").localize(datetime.now()) + timedelta(days=sus.duracion) - timedelta(seconds=1)
+
+
 
                     DetalleSuscripcion.objects.create(
                         idSuscripcion=sus,
                         idVenta=venta,
-                        fechaInicio=datetime.now(pytz.timezone('America/Mexico_City')).date(),
+                        fechaInicio=fecha_inicio,
                         fechaFin=fecha_fin ,
                         precioVenta=sus.precio,
                         descuento=0,
