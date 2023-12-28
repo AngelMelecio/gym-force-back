@@ -12,7 +12,7 @@ class Cliente(models.Model):
     facebook = models.CharField(max_length=200, null=True, blank=True)
     instagram = models.CharField(max_length=200, null=True, blank=True)
     notas = models.CharField(max_length=1000, null=True, blank=True)
-    huella = models.CharField(max_length=200,null=True, blank=True)
+    huella = models.BinaryField(null=True, blank=True)
     pin = models.IntegerField(unique=True, blank=True, null=True)
 
     def __str__(self):
