@@ -17,7 +17,7 @@ class Cliente(models.Model):
     pin = models.IntegerField(unique=True, blank=True, null=True)
 
     def __str__(self):
-        return "{}".format(self.nombre+" "+self.apellidos)
+        return f"{self.nombre} {self.apellidos}"
     
     def get_full_name(self):
         if self:
