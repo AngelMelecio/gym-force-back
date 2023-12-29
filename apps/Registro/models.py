@@ -10,4 +10,4 @@ class Registro(models.Model):
     idUser = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__ (self):
-        return "{}".format(self.fecha+" - "+self.idCliente.nombre+" - "+self.idUser.nombre)
+        return "{}".format(self.idCliente.nombre+" - "+self.idUser.nombre)
