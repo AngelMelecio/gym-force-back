@@ -56,7 +56,7 @@ def registro_api_view(request):
                     print('Registro guardado')
                     
                     print('Is fingerprint: ', isFingerprint)
-                    if isFingerprint:
+                    if isFingerprint is True:
                         channels_layer = get_channel_layer()
                         async_to_sync(channels_layer.group_send)(
                             'access_socket', # Channel group name
