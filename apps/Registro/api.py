@@ -14,6 +14,8 @@ from datetime import datetime
 from django.utils.timezone import make_aware
 from datetime import timedelta
 import pytz
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 @api_view(['GET','POST'])
 @parser_classes([MultiPartParser , JSONParser])
@@ -23,6 +25,7 @@ def registro_api_view(request):
         # Verificar el PIN
         req_pin = request.data.get('pin')
         req_id = request.data.get('idCliente')
+        isFingerprint = request.data.get('isFingerprint')
 
         if req_id:
             cliente = Cliente.objects.filter(idCliente=req_id).first()
@@ -49,10 +52,28 @@ def registro_api_view(request):
                 registro = Registro(idCliente=cliente, idUser=usuario)
                 try:
                     registro.save()
+                    
+                    print('Registro guardado')
+                    
+                    print('Is fingerprint: ', isFingerprint)
+                    if isFingerprint:
+                        channels_layer = get_channel_layer()
+                        async_to_sync(channels_layer.group_send)(
+                            'access_socket', # Channel group name
+                            {   
+                                'type':'accessStatus', # Consumer method
+                                'data': dll_sus_srlzr.data
+                            }
+                        )
+                    
+                    print('Propagado por websocket')
                     return Response({
                         'message': 'Registro exitoso',
                         'registro': dll_sus_srlzr.data
                     }, status=status.HTTP_200_OK)
+
+                    # if isFingerprint: propagate through websocket
+
                 except Exception as e:
                     # Handle save error
                     return Response({'message': f'Error al guardar el registro: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
