@@ -34,6 +34,7 @@ BASE_APPS = [
     'django.contrib.staticfiles',
 ]
 THIRD_APPS = [
+    'channels',
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',  
@@ -53,6 +54,15 @@ LOCAL_APPS = [
 
 INSTALLED_APPS = BASE_APPS + LOCAL_APPS + THIRD_APPS
 
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',  # or use Redis or other backends
+    },
+}
+
+# WSGI_APPLICATION = 'backendGym.wsgi.application'
+ASGI_APPLICATION = 'backendGym.asgi.application'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -134,7 +144,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'backendGym.wsgi.application'
+
 
 
 # Database

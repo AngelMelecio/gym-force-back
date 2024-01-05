@@ -69,8 +69,6 @@ def venta_api_view(request):
             total_cost += float(product.precio) * float(p['cantidad'])
 
         cliente = Cliente.objects.filter(idCliente=id_clnt).first()
-        if not cliente:
-            raise ValidationError("Cliente no encontrado.")
 
         usuario = User.objects.filter(id=id_usr).first()
         if not usuario:
@@ -115,11 +113,15 @@ def venta_api_view(request):
                 # Actualizar inventario
                 for prd, p in zip(product_instances, productos):
                     prd.inventario -= p['cantidad']
-                    prd.save()
+                    prd.save(
+                    
+                    
+                if sus.duracion > 1 and not id_clnt:
+                    raise("La suscripción debe tener un cliente.")
 
-                # Logica de suscripcion
-                if suscripcion:
-                    #Ajustes generales
+                if suscripcion and id_clnt:
+                  
+                   #Ajustes generales
                     today = datetime.now().date()
 
                     if sus.duracion%30 == 0:
@@ -128,7 +130,11 @@ def venta_api_view(request):
                         meses=0
 
                     if sus.duracion == 1: sus.duracion = 0
-                    
+    
+                    print("SUSCRIPCION")
+                    print(suscripcion)
+
+
                     detalle_suscripcion = DetalleSuscripcion.objects.filter(idVenta__idCliente=id_clnt).last()
                     
                     #Tiene historial de suscripciones
@@ -161,7 +167,7 @@ def venta_api_view(request):
                         precioVenta=sus.precio,
                         descuento=0,
                     )
-            
+
         except Exception as e:
             print(e)
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
