@@ -34,8 +34,8 @@ def ds_change_date_end_api_view(request, pk=None ):
                 try:
                     fecha_fin_str = updated_data['fechaFin']
                     # Assuming that the time part is not important and by default to midnight
-                    fecha_fin_obj = datetime.strptime(fecha_fin_str, '%Y-%m-%d')
-                    updated_data['fechaFin'] = fecha_fin_obj
+                    
+                    updated_data['fechaFin'] = fecha_fin_str
                 except ValueError:
                     # Handle the error if the date format is incorrect
                     return Response({'message': 'Fecha incorrecta'}, status=status.HTTP_400_BAD_REQUEST)
