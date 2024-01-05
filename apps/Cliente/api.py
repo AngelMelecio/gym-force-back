@@ -14,21 +14,20 @@ import pytz
 
 def get_info_adicional_cliente(cliente):
     # Obtenemos la venta más reciente del cliente
-    # Obtenemos el detalle de suscripción más reciente de la venta
-    detalle_suscripcion = DetalleSuscripcion.objects.filter(idVenta__idCliente=cliente.data.get('idCliente') ).last()
+    detalle_suscripcion = DetalleSuscripcion.objects.filter(
+        idVenta__idCliente=cliente.data.get('idCliente')
+    ).last()
+
     if detalle_suscripcion:
+        # Utilizamos datetime.now() sin zona horaria
+        today = datetime.now().date()
 
-        timezone = pytz.timezone("America/Mexico_City")
-        now_aware = timezone.localize(datetime.now())
+        # Calculamos la diferencia de días
+        diferencia_dias = (detalle_suscripcion.fechaFin - today).days
 
-        # Calculate the remaining days
-        # Using timedelta(1) to count the current day if any part of the day is left
-        diferencia_dias = (detalle_suscripcion.fechaFin - now_aware + timedelta(1)).days - 1
-
-        # Aquí usamos el objeto Suscripcion relacionado al detalle para construir el suscripcion
+        # Construimos la información de la suscripción
         suscripcion = detalle_suscripcion.idSuscripcion
         suscripcion = f"{suscripcion.tipo} {suscripcion.modalidad}"
-       
     else:
         diferencia_dias = None
         suscripcion = ""

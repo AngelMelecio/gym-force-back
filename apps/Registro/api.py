@@ -43,7 +43,8 @@ def registro_api_view(request):
 
             dll_sus_srlzr = DetalleSuscripcionSerializerPostRegistro(detalle)
             fecha_fin = detalle.fechaFin
-
+            fecha_fin = make_aware(datetime(fecha_fin.year, fecha_fin.month, fecha_fin.day))
+            
             if fecha_fin.date() >= today:
                 # Create the record
                 registro = Registro(idCliente=cliente, idUser=usuario)

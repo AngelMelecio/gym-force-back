@@ -18,7 +18,27 @@ from datetime import datetime, timedelta
 from rest_framework.exceptions import ValidationError
 from django.utils.timezone import make_aware
 import pytz
+from datetime import datetime, timedelta
+import calendar
+import pytz
 
+def calcular_fecha_fin(fecha_inicio, duracion_meses):
+    año = fecha_inicio.year
+    mes = fecha_inicio.month + duracion_meses
+
+    # Ajustar año y mes si mes > 12
+    año += mes // 12
+    mes = mes % 12 if mes % 12 != 0 else 12
+
+    # Verificar la cantidad de días en el mes de destino
+    dias_en_mes = calendar.monthrange(año, mes)[1]
+
+    # Si el día de inicio existe en el mes de destino, usar ese día; 
+    # de lo contrario, usar el último día del mes
+    dia = fecha_inicio.day if fecha_inicio.day <= dias_en_mes else dias_en_mes
+
+    fecha_fin = datetime(año, mes, dia).date()
+    return fecha_fin
 
 
 @api_view(['GET','POST'])
@@ -97,29 +117,40 @@ def venta_api_view(request):
                     prd.inventario -= p['cantidad']
                     prd.save()
 
-
+                # Logica de suscripcion
                 if suscripcion:
+                    #Ajustes generales
+                    today = datetime.now().date()
+
+                    if sus.duracion%30 == 0:
+                        meses= int(sus.duracion/30)
+                    else:
+                        meses=0
+
+                    if sus.duracion == 1: sus.duracion = 0
                     
                     detalle_suscripcion = DetalleSuscripcion.objects.filter(idVenta__idCliente=id_clnt).last()
+                    
                     #Tiene historial de suscripciones
                     if detalle_suscripcion:
-                        diferencia_dias = (detalle_suscripcion.fechaFin - pytz.timezone("America/Mexico_City").localize(datetime.now()) + timedelta(1)).days - 1
-
+                        fecha_inicio = detalle_suscripcion.fechaFin
+                        
                         #Tiene suscripcion activa
-                        if diferencia_dias >=0:
-                            fecha_inicio = detalle_suscripcion.fechaFin 
-
+                        if (fecha_inicio - today).days >= 0: 
+                            fecha_inicio = fecha_inicio 
                         #No tiene suscripcion activa
                         else:
-                            fecha_inicio = pytz.timezone("America/Mexico_City").localize(datetime.now())
+                            fecha_inicio = today
                         
-                        fecha_fin = fecha_inicio + timedelta(days=sus.duracion)
-                        
+                        #Si la suscripcion es o no mensual
+                        fecha_fin = calcular_fecha_fin(fecha_inicio, meses) if meses != 0 else fecha_inicio + timedelta(days=sus.duracion)
+
                     #No tiene historial de suscripciones
                     else :
-                        fecha_inicio = pytz.timezone("America/Mexico_City").localize(datetime.now())
-                        fecha_fin = pytz.timezone("America/Mexico_City").localize(datetime.now()) + timedelta(days=sus.duracion) - timedelta(seconds=1)
+                        fecha_inicio = today
 
+                        #Si la suscripcion es o no mensual
+                        fecha_fin = calcular_fecha_fin(fecha_inicio, meses) if meses != 0 else fecha_inicio + timedelta(days=sus.duracion)
 
 
                     DetalleSuscripcion.objects.create(
