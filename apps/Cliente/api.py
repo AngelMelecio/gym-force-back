@@ -107,10 +107,12 @@ def cliente_detail_api_view(request, pk=None):
 
         # Update
         elif request.method == 'PUT':
-            cliente_serializer = ClienteSerializer(cliente, data=request.data)
+            print(request.data)
+            cliente_serializer = ClienteSerializer(cliente, data=request.data, partial = True)
             if cliente_serializer.is_valid():
                 cliente_serializer.save()
                 return Response({'message': '¡Cliente actualizado correctamente!'}, status=status.HTTP_200_OK)
+            print(cliente_serializer.errors)
             return Response(cliente_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # Delete

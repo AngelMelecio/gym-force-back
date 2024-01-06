@@ -54,9 +54,6 @@ def registro_api_view(request):
                 try:
                     registro.save()
                     
-                    print('Registro guardado')
-                    
-                    print('Is fingerprint: ', isFingerprint)
                     if isFingerprint is True:
                         channels_layer = get_channel_layer()
                         async_to_sync(channels_layer.group_send)(
@@ -67,7 +64,6 @@ def registro_api_view(request):
                             }
                         )
                     
-                    print('Propagado por websocket')
                     return Response({
                         'message': 'Registro exitoso',
                         'registro': dll_sus_srlzr.data
@@ -79,11 +75,32 @@ def registro_api_view(request):
                     # Handle save error
                     return Response({'message': f'Error al guardar el registro: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             else:
-                return Response({'message': 'Suscripción vencida', 'registro': dll_sus_srlzr.data}, status=status.HTTP_409_CONFLICT)
+                responseMessage = 'Suscripción vencida'
+                responseRegistro = dll_sus_srlzr.data
+                statusResponse = status.HTTP_409_CONFLICT
+            
         else:
-            return Response({'message': 'Cliente No encontrado'}, status=status.HTTP_404_NOT_FOUND)
+            responseMessage = 'Cliente no encontrado'
+            responseRegistro = ""
+            statusResponse = status.HTTP_404_NOT_FOUND
 
+        if isFingerprint is True:
+            channels_layer = get_channel_layer()
+            async_to_sync(channels_layer.group_send)(
+                'access_socket', # Channel group name
+                {   
+                    'type':'accessStatus', # Consumer method
+                    'data': {
+                        'message': responseMessage,
+                        'registro': responseRegistro
+                    }
+                }
+            )
 
+        return Response({
+            'message': responseMessage, 
+            'registro': responseRegistro}, status=statusResponse)
+    
     if(request.method == 'GET'):
         pass
 
