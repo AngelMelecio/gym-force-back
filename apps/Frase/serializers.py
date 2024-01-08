@@ -9,7 +9,7 @@ class FraseSerializer(serializers.ModelSerializer):
         model = Frase
         fields = '__all__'
 
-class FraseSerializerToGet(serializers.ModelSerializer):
+class FraseSerializerPostRegistro(serializers.ModelSerializer):
     class Meta:
         model = Frase
         fields = ['frase']

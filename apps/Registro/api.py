@@ -21,6 +21,9 @@ from asgiref.sync import async_to_sync
 @parser_classes([MultiPartParser , JSONParser])
 def registro_api_view(request):
     if request.method == 'POST':
+
+        # Current date in the appropriate timezone
+        today = datetime.now(pytz.timezone('America/Mexico_City')).date()
         
         # Verificar el PIN
         req_pin = request.data.get('pin')
@@ -33,9 +36,6 @@ def registro_api_view(request):
             cliente = Cliente.objects.filter(pin=req_pin).first()
         else:
             return Response({"message": "PIN no válido"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Current date in the appropriate timezone
-        today = datetime.now(pytz.timezone('America/Mexico_City')).date()
         
         if cliente:
             detalle = DetalleSuscripcion.objects.filter(idVenta__idCliente=cliente.idCliente).last()
@@ -83,7 +83,7 @@ def registro_api_view(request):
             responseMessage = 'Cliente no encontrado'
             responseRegistro = ""
             statusResponse = status.HTTP_404_NOT_FOUND
-
+        
 
         if isFingerprint is True:
             channels_layer = get_channel_layer()
@@ -93,7 +93,7 @@ def registro_api_view(request):
                     'type':'accessStatus', # Consumer method
                     'data': {
                         'message': responseMessage,
-                        'registro': responseRegistro
+                        'registro': responseRegistro,
                     }
                 }
             )
