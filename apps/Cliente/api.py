@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.decorators import parser_classes
 from apps.Cliente.models import Cliente
-from apps.Cliente.serializers import ClienteSerializer
+from apps.Cliente.serializers import ClienteSerializer, ClienteRegistrosSerializer
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from datetime import datetime, timedelta
 from apps.DetalleSuscripcion.models import DetalleSuscripcion
@@ -107,10 +107,16 @@ def cliente_detail_api_view(request, pk=None):
 
         # Update
         elif request.method == 'PUT':
-            cliente_serializer = ClienteSerializer(cliente, data=request.data)
+            cliente_serializer = ClienteSerializer(
+                cliente, 
+                data=request.data, 
+                partial = True, 
+                context={'request': request}
+            )
             if cliente_serializer.is_valid():
                 cliente_serializer.save()
-                return Response({'message': '¡Cliente actualizado correctamente!'}, status=status.HTTP_200_OK)
+                return Response({'message': '¡Cliente actualizado correctamente!'}, 
+                                status=status.HTTP_200_OK)
             return Response(cliente_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # Delete
@@ -132,3 +138,36 @@ def cliente_detail_api_view(request, pk=None):
         {'message': 'No se encontró el Cliente'},
         status=status.HTTP_400_BAD_REQUEST
     )
+
+@api_view(['GET'])
+@parser_classes([MultiPartParser, JSONParser])
+def clientes_registrar_api_view(request):
+    if request.method == 'GET':
+        clientes = Cliente.objects.all()
+        cliente_serializer = ClienteRegistrosSerializer(clientes, many=True)
+        return Response(cliente_serializer.data, status=status.HTTP_200_OK)
+        
+@api_view(['PUT'])
+@parser_classes([MultiPartParser, JSONParser])
+def cliente_update_huella(request, pk=None):
+    try:
+        cliente = Cliente.objects.get(idCliete=pk)
+
+        # Access the uploaded file
+        file = request.FILES.get('huella')
+        if not file:
+            return Response({'message': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Read the content of the file
+        byte_content = file.read()
+
+        # Update the BinaryField
+        cliente.huella = byte_content
+        cliente.save()
+
+        return Response({'message': 'Huella updated successfully'}, status=status.HTTP_200_OK)
+
+    except Cliente.DoesNotExist:
+        return Response({'message': 'Cliente not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
