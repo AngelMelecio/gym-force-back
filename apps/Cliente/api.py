@@ -146,28 +146,4 @@ def clientes_registrar_api_view(request):
         clientes = Cliente.objects.all()
         cliente_serializer = ClienteRegistrosSerializer(clientes, many=True)
         return Response(cliente_serializer.data, status=status.HTTP_200_OK)
-        
-@api_view(['PUT'])
-@parser_classes([MultiPartParser, JSONParser])
-def cliente_update_huella(request, pk=None):
-    try:
-        cliente = Cliente.objects.get(idCliete=pk)
-
-        # Access the uploaded file
-        file = request.FILES.get('huella')
-        if not file:
-            return Response({'message': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Read the content of the file
-        byte_content = file.read()
-
-        # Update the BinaryField
-        cliente.huella = byte_content
-        cliente.save()
-
-        return Response({'message': 'Huella updated successfully'}, status=status.HTTP_200_OK)
-
-    except Cliente.DoesNotExist:
-        return Response({'message': 'Cliente not found'}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+ 
