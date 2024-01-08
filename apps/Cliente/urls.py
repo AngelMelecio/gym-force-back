@@ -1,9 +1,7 @@
 from django.urls import path
 from apps.Cliente.api import cliente_api_view, \
     cliente_detail_api_view, \
-    clientes_registrar_api_view, \
-    cliente_update_huella
-
+    clientes_registrar_api_view
 
 urlpatterns = [
     path('clientes/', cliente_api_view, name='cliente_api_view'),
