@@ -5,6 +5,22 @@ class ClienteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cliente
         fields = '__all__'
+    
+    def update(self, instance, validated_data):
+        # Handle the file separately if it's in the request
+        huella_file = self.context['request'].FILES.get('huella')
+        print(huella_file)
+        if huella_file:
+            instance.huella = huella_file.read()
+
+        # Handle other fields normally
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
+
+
 
 class ClienteSerializerPostRegistro(serializers.ModelSerializer):
     class Meta:
