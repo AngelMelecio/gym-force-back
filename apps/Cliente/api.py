@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.decorators import parser_classes
 from apps.Cliente.models import Cliente
-from apps.Cliente.serializers import ClienteSerializer
+from apps.Cliente.serializers import ClienteSerializer, ClienteRegistrosSerializer
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from datetime import datetime, timedelta
 from apps.DetalleSuscripcion.models import DetalleSuscripcion
@@ -72,6 +72,7 @@ def cliente_api_view(request):
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @parser_classes([MultiPartParser, JSONParser])
+
 def cliente_detail_api_view(request, pk=None):
     # Queryset
     cliente = Cliente.objects.filter(idCliente=pk).first()
@@ -134,3 +135,12 @@ def cliente_detail_api_view(request, pk=None):
         {'message': 'No se encontró el Cliente'},
         status=status.HTTP_400_BAD_REQUEST
     )
+
+@api_view(['GET'])
+@parser_classes([MultiPartParser, JSONParser])
+def clientes_registrar_api_view(request):
+    if request.method == 'GET':
+        clientes = Cliente.objects.all()
+        cliente_serializer = ClienteRegistrosSerializer(clientes, many=True)
+        return Response(cliente_serializer.data, status=status.HTTP_200_OK)
+        
