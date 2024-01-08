@@ -11,3 +11,12 @@ class ClienteSerializerPostRegistro(serializers.ModelSerializer):
         model = Cliente
         fields = ['nombre','apellidos','idCliente','fotografia']
 
+
+class ClienteRegistrosSerializer(serializers.ModelSerializer):
+    hasHuella = serializers.SerializerMethodField('get_hasHuella')
+    class Meta:
+        model = Cliente
+        fields = ['idCliente','nombre','apellidos','hasHuella']
+
+    def get_hasHuella(self, obj):
+        return obj.huella is not None
