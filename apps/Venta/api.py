@@ -12,6 +12,7 @@ from apps.Suscripcion.serializers import SuscripcionSerializer
 from apps.DetalleVenta.models import DetalleVenta
 from apps.DetalleSuscripcion.models import DetalleSuscripcion
 from apps.Cliente.models import Cliente
+from apps.Registro.models import Registro
 from apps.Users.models import User
 from django.db import transaction
 from datetime import datetime, timedelta
@@ -45,40 +46,43 @@ def calcular_fecha_fin(fecha_inicio, duracion_meses):
 @parser_classes([MultiPartParser , JSONParser])
 def venta_api_view(request):
     if request.method == 'POST':
-        
+        #Extraccion de datos de la request
         productos = request.data.get('productos', [])
         suscripcion = request.data.get('suscripcion', None)
         id_clnt = request.data.get('cliente', None)
         id_usr = request.data.get('usuario', None)
 
-        if not productos and suscripcion is None:
-            return Response({"message": "Error de solicitud"}, status=status.HTTP_400_BAD_REQUEST)
-
+        #Validacion de datos de la request y recuperacion de los mismos en la DB
         total_cost = 0
+
+        if not productos and suscripcion is None:
+            return Response({"error": "Error de solicitud"}, status=status.HTTP_400_BAD_REQUEST)
 
         if suscripcion:
             sus = Suscripcion.objects.filter(idSuscripcion=suscripcion['idSuscripcion']).first()
             if not sus:
-                raise ValidationError("Suscripción no encontrada.")
+                return Response({"error": "Suscripción no encontrada."}, status=status.HTTP_400_BAD_REQUEST)
+
             total_cost += float(sus.precio)
         
         for p in productos:
             product=Producto.objects.filter(idProducto=p['idProducto']).first()
             if not product:
-                raise ValidationError("Producto no encontrado.")
+                return Response({"error": f"Producto con id {p['idProducto']} no encontrado."}, status=status.HTTP_400_BAD_REQUEST)
             total_cost += float(product.precio) * float(p['cantidad'])
-
         cliente = Cliente.objects.filter(idCliente=id_clnt).first()
 
         usuario = User.objects.filter(id=id_usr).first()
         if not usuario:
-            raise ValidationError("Usuario no encontrado.")
+            return Response({"error": "Usuario no encontrado."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Crear venta, detalles de venta, detalles de suscripción y registro (der ser necesario)
         try:
             with transaction.atomic():
                 venta = Venta.objects.create(total=total_cost, idUser=usuario, idCliente=cliente)
-                
-                 # Existencia e inventario de productos
+
+                #--- PRODUCTOS ---
+                # Existencia e inventario de productos
                 product_instances = []
                 for p in productos:
                     # select_for_update() toma el valor que tiene el registro en la base de datos
@@ -86,14 +90,10 @@ def venta_api_view(request):
                     # tomen el mismo valor y se genere un error de concurrencia
                     prd = Producto.objects.select_for_update().filter(idProducto=p['idProducto']).first()
                     
-                    if not prd:
-                        raise ValidationError(f"Producto con id {p['idProducto']} no encontrado.")
-                    
                     # Validar que haya suficiente inventario
                     if prd.inventario < p['cantidad']:
                         raise ValidationError(f"No hay suficiente stock para el producto {prd.nombre}.")
 
-                    total_cost += float(prd.precio) * float(p['cantidad'])
                     p['precioVenta'] = prd.precio
                     p['idProducto'] = prd
                     product_instances.append(prd)
@@ -113,14 +113,14 @@ def venta_api_view(request):
                 # Actualizar inventario
                 for prd, p in zip(product_instances, productos):
                     prd.inventario -= p['cantidad']
-                    prd.save(
-                    
-                    
-                if sus.duracion > 1 and not id_clnt:
-                    raise("La suscripción debe tener un cliente.")
+                    prd.save()
 
-                if suscripcion and id_clnt:
-                  
+                #--- SUSCRIPCION ---
+                if suscripcion:
+                    #Validamos si es necesario que tenga cliente asignado o no la suscripcion
+                    if sus.duracion > 1 and not id_clnt:
+                        raise ValidationError("Este tipo de suscripción debe tener un cliente asignado. Selecciona un cliente.")
+
                    #Ajustes generales
                     today = datetime.now().date()
 
@@ -129,12 +129,8 @@ def venta_api_view(request):
                     else:
                         meses=0
 
-                    if sus.duracion == 1: sus.duracion = 0
+                    if sus.duracion == 1 and sus.tipo== 'Visita': sus.duracion = 0
     
-                    print("SUSCRIPCION")
-                    print(suscripcion)
-
-
                     detalle_suscripcion = DetalleSuscripcion.objects.filter(idVenta__idCliente=id_clnt).last()
                     
                     #Tiene historial de suscripciones
@@ -154,11 +150,9 @@ def venta_api_view(request):
                     #No tiene historial de suscripciones
                     else :
                         fecha_inicio = today
-
                         #Si la suscripcion es o no mensual
                         fecha_fin = calcular_fecha_fin(fecha_inicio, meses) if meses != 0 else fecha_inicio + timedelta(days=sus.duracion)
-
-
+                    
                     DetalleSuscripcion.objects.create(
                         idSuscripcion=sus,
                         idVenta=venta,
@@ -167,10 +161,35 @@ def venta_api_view(request):
                         precioVenta=sus.precio,
                         descuento=0,
                     )
+                    
+                    #Crear ingreso de suscripcion visita con o sin cliente
+                    idCliente = cliente if id_clnt else None
+                    Registro.objects.create(
+                        idCliente=idCliente,
+                        idUser=usuario,
+                        fecha=today,
+                    )
+        except ValidationError as e:
+            # e.detail es una lista o un diccionario de ErrorDetail
+            # Si siempre es una lista y solo interesa el primer mensaje, podemos hacer:
+            mensaje_error = e.detail[0] if e.detail else "Error desconocido"
+
+            # Si e.detail es un diccionario y queremos concatenar todos los mensajes, podemos hacer:
+            """
+            if isinstance(e.detail, dict):
+                mensajes = []
+                for campo, errores in e.detail.items():
+                    for error in errores:
+                        mensajes.append(str(error))
+                mensaje_error = '. '.join(mensajes)
+            elif isinstance(e.detail, list):
+                mensaje_error = ', '.join([str(error) for error in e.detail])
+            """
+            return Response({"error": mensaje_error}, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             print(e)
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Ocurrio un error inesperado, vuelva a intentarlo o contacte a los desarrolladores"}, status=status.HTTP_400_BAD_REQUEST)
 
         vnt_srlzr = VentaSerializerWithDetails(venta)
         return Response(vnt_srlzr.data, status=status.HTTP_201_CREATED)
@@ -188,9 +207,9 @@ def reporte_ventas_api_view(request,fecha_inicio, fecha_fin):
     print(fin)
 
     if inicio and fin:
-        ventas = Venta.objects.filter(fecha__range=(inicio, fin))
+        ventas = Venta.objects.filter(fecha__range=(inicio, fin)).order_by('fecha').reverse()
     else:
-        ventas = Venta.objects.all()
+        ventas = Venta.objects.all().order_by('fecha').reverse()
 
     ventas_serializer = VentaDetalleSerializerToReport(ventas, many=True)
     return Response(ventas_serializer.data, status=status.HTTP_200_OK)

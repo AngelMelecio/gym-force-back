@@ -58,12 +58,18 @@ class VentaSerializerPostRegistro(serializers.ModelSerializer):
 
 class VentaDetalleSerializerToReport(serializers.ModelSerializer):
     nombre_usuario = serializers.CharField(source='idUser.get_full_name')
-    nombre_cliente = serializers.CharField(source='idCliente.get_full_name')
+    nombre_cliente = serializers.SerializerMethodField()
     detalles = serializers.SerializerMethodField()
 
     class Meta:
         model = Venta
         fields = ['fecha', 'total', 'nombre_usuario', 'nombre_cliente', 'detalles']
+
+    def get_nombre_cliente(self, obj):
+        # Verifica si hay un cliente asociado y devuelve su nombre. Si no, devuelve una cadena vacía o un mensaje.
+        if obj.idCliente:
+            return obj.idCliente.get_full_name()
+        return "No especificado o registrado"  # O lo que prefieras
 
     def get_detalles(self, obj):
         detalles_venta = DetalleVenta.objects.filter(idVenta=obj)

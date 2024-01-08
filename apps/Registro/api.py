@@ -81,7 +81,7 @@ def registro_api_view(request):
             else:
                 return Response({'message': 'Suscripción vencida', 'registro': dll_sus_srlzr.data}, status=status.HTTP_409_CONFLICT)
         else:
-            return Response({'message': 'Cliente No encontrado'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Cliente no encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
 
     if(request.method == 'GET'):
@@ -91,8 +91,12 @@ def registro_api_view(request):
 @parser_classes([MultiPartParser, JSONParser])
 def registro_detail_api_view(request, pk=None, sus=None ):
     if request.method == 'GET':
-        detalle = DetalleSuscripcion.objects.filter(id=sus).first()
-        registros = Registro.objects.filter(idCliente=pk).filter(fecha__range=[detalle.fechaInicio, detalle.fechaFin])
+        detalle = DetalleSuscripcion.objects.filter(id=sus).first()      
+
+        inicio = detalle.fechaInicio
+        fin = detalle.fechaFin + timedelta(days=1) - timedelta(seconds=1)
+
+        registros = Registro.objects.filter(idCliente=pk).filter(fecha__range=[inicio, fin])
         registro_serializer = RegistroSerializer(registros, many=True)
         return Response(registro_serializer.data, status=status.HTTP_200_OK)
     
@@ -113,9 +117,9 @@ def registros_api_view(request, fecha_inicio, fecha_fin):
     fin += timedelta(days=1) - timedelta(seconds=1)
 
     if inicio and fin:
-        registros = Registro.objects.filter(fecha__range=(inicio, fin))
+        registros = Registro.objects.filter(fecha__range=(inicio, fin)).order_by('fecha').reverse()
     else:
-        registros = Registro.objects.all()
+        registros = Registro.objects.all().order_by('fecha').reverse()
     registros_serializer = RegistroSerializerToReport(registros, many=True)
     return Response(registros_serializer.data, status=status.HTTP_200_OK)
          
