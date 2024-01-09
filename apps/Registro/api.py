@@ -42,42 +42,47 @@ def registro_api_view(request):
             usuario = User.objects.filter(id=request.data.get('idUser')).first()
 
             if not detalle:
-                return Response({'message': 'Cliente sin suscripción'}, status=status.HTTP_404_NOT_FOUND)
-
-            dll_sus_srlzr = DetalleSuscripcionSerializerPostRegistro(detalle)
-            fecha_fin = detalle.fechaFin
-            fecha_fin = make_aware(datetime(fecha_fin.year, fecha_fin.month, fecha_fin.day))
-            
-            if fecha_fin.date() >= today:
-                # Create the record
-                registro = Registro(idCliente=cliente, idUser=usuario)
-                try:
-                    registro.save()
-                    
-                    if isFingerprint is True:
-                        channels_layer = get_channel_layer()
-                        async_to_sync(channels_layer.group_send)(
-                            'access_socket', # Channel group name
-                            {   
-                                'type':'accessStatus', # Consumer method
-                                'data': dll_sus_srlzr.data
-                            }
-                        )
-                    
-                    return Response({
-                        'message': 'Registro exitoso',
-                        'registro': dll_sus_srlzr.data
-                    }, status=status.HTTP_200_OK)
-
-                    # if isFingerprint: propagate through websocket
-
-                except Exception as e:
-                    # Handle save error
-                    return Response({'message': f'Error al guardar el registro: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                responseMessage = 'Cliente sin suscripción'
+                responseRegistro = ""
+                statusResponse = status.HTTP_404_NOT_FOUND
             else:
-                responseMessage = 'Suscripción vencida'
-                responseRegistro = dll_sus_srlzr.data
-                statusResponse = status.HTTP_409_CONFLICT
+                dll_sus_srlzr = DetalleSuscripcionSerializerPostRegistro(detalle)
+                fecha_fin = detalle.fechaFin
+                fecha_fin = make_aware(datetime(fecha_fin.year, fecha_fin.month, fecha_fin.day))
+                
+                if fecha_fin.date() >= today:
+                    # Create the record
+                    registro = Registro(idCliente=cliente, idUser=usuario)
+                    try:
+                        registro.save()
+                        
+                        if isFingerprint is True:
+                            channels_layer = get_channel_layer()
+                            async_to_sync(channels_layer.group_send)(
+                                'access_socket', # Channel group name
+                                {   
+                                    'type':'accessStatus', # Consumer method
+                                    'data': {
+                                        'message': 'Registro exitoso',
+                                        'registro': dll_sus_srlzr.data
+                                    }
+                                }
+                            )
+                        
+                        return Response({
+                            'message': 'Registro exitoso',
+                            'registro': dll_sus_srlzr.data
+                        }, status=status.HTTP_200_OK)
+
+                        # if isFingerprint: propagate through websocket
+
+                    except Exception as e:
+                        # Handle save error
+                        return Response({'message': f'Error al guardar el registro: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                else:
+                    responseMessage = 'Suscripción vencida'
+                    responseRegistro = dll_sus_srlzr.data
+                    statusResponse = status.HTTP_409_CONFLICT
             
         else:
             responseMessage = 'Cliente no encontrado'
