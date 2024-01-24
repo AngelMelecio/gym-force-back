@@ -43,7 +43,7 @@ def get_info_adicional_cliente(cliente):
 def cliente_api_view(request):
     # list
     if request.method == 'GET':
-        clientes = Cliente.objects.all()
+        clientes = Cliente.objects.all().order_by('-idCliente')
         response_data = []
 
         for cliente in clientes:
@@ -143,7 +143,7 @@ def cliente_detail_api_view(request, pk=None):
 @parser_classes([MultiPartParser, JSONParser])
 def clientes_registrar_api_view(request):
     if request.method == 'GET':
-        clientes = Cliente.objects.all()
+        clientes = Cliente.objects.all().order_by('-idCliente')
         cliente_serializer = ClienteRegistrosSerializer(clientes, many=True)
         return Response(cliente_serializer.data, status=status.HTTP_200_OK)
  

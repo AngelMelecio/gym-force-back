@@ -129,7 +129,7 @@ def venta_api_view(request):
                     else:
                         meses=0
 
-                    if sus.duracion == 1 and sus.tipo== 'Visita': sus.duracion = 0
+                    #if sus.duracion == 1 and sus.tipo== 'Visita': sus.duracion = 0
     
                     detalle_suscripcion = DetalleSuscripcion.objects.filter(idVenta__idCliente=id_clnt).last()
                     
@@ -145,13 +145,14 @@ def venta_api_view(request):
                             fecha_inicio = today
                         
                         #Si la suscripcion es o no mensual
-                        fecha_fin = calcular_fecha_fin(fecha_inicio, meses) if meses != 0 else fecha_inicio + timedelta(days=sus.duracion)
+                        fecha_fin = calcular_fecha_fin(fecha_inicio, meses) if meses != 0 else fecha_inicio + timedelta(days=sus.duracion-1)
 
                     #No tiene historial de suscripciones
                     else :
                         fecha_inicio = today
+                        
                         #Si la suscripcion es o no mensual
-                        fecha_fin = calcular_fecha_fin(fecha_inicio, meses) if meses != 0 else fecha_inicio + timedelta(days=sus.duracion)
+                        fecha_fin = calcular_fecha_fin(fecha_inicio, meses) if meses != 0 else fecha_inicio + timedelta(days=sus.duracion-1)
                     
                     DetalleSuscripcion.objects.create(
                         idSuscripcion=sus,
@@ -204,12 +205,12 @@ def reporte_ventas_api_view(request,fecha_inicio, fecha_fin):
 
     # Ajustar fin para incluir todo el día
     fin += timedelta(days=1) - timedelta(seconds=1)
-    print(fin)
+
 
     if inicio and fin:
         ventas = Venta.objects.filter(fecha__range=(inicio, fin)).order_by('fecha').reverse()
     else:
         ventas = Venta.objects.all().order_by('fecha').reverse()
 
-    ventas_serializer = VentaDetalleSerializerToReport(ventas, many=True)
+    ventas_serializer = VentaSerializerWithDetails(ventas, many=True)
     return Response(ventas_serializer.data, status=status.HTTP_200_OK)

@@ -22,14 +22,14 @@ class DetallesVentaSerializer(serializers.ModelSerializer):
     nombreProducto = serializers.ReadOnlyField(source='idProducto.nombre')
     class Meta:
         model = DetalleVenta
-        fields = ['nombreProducto', 'precioVenta','cantidad']
+        fields = ['idProducto','nombreProducto', 'precioVenta','cantidad']
 
 class DetallesSuscripcionSerializer(serializers.ModelSerializer):
     nombreSuscripcion = serializers.ReadOnlyField(source='idSuscripcion.get_nombre')
     precio = serializers.ReadOnlyField(source='idSuscripcion.precio')
     class Meta:
         model = DetalleSuscripcion
-        fields = ['nombreSuscripcion','precio','fechaFin']
+        fields = ['idSuscripcion','nombreSuscripcion','precio','fechaFin']
 
 
 class VentaSerializerWithDetails(serializers.ModelSerializer):
@@ -63,7 +63,7 @@ class VentaDetalleSerializerToReport(serializers.ModelSerializer):
 
     class Meta:
         model = Venta
-        fields = ['fecha', 'total', 'nombre_usuario', 'nombre_cliente', 'detalles']
+        fields = ['idVenta','fecha', 'total', 'nombre_usuario', 'nombre_cliente', 'detalles']
 
     def get_nombre_cliente(self, obj):
         # Verifica si hay un cliente asociado y devuelve su nombre. Si no, devuelve una cadena vacía o un mensaje.
