@@ -165,11 +165,12 @@ def venta_api_view(request):
                     
                     #Crear ingreso de suscripcion visita con o sin cliente
                     idCliente = cliente if id_clnt else None
-                    Registro.objects.create(
-                        idCliente=idCliente,
-                        idUser=usuario,
-                        fecha=today,
-                    )
+                    if(sus.tipo == 'Visita'):
+                        Registro.objects.create(
+                            idCliente=idCliente,
+                            idUser=usuario,
+                            fecha=today,
+                        )
         except ValidationError as e:
             # e.detail es una lista o un diccionario de ErrorDetail
             # Si siempre es una lista y solo interesa el primer mensaje, podemos hacer:
